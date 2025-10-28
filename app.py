@@ -206,3 +206,9 @@ def init_db_command():
     print("Initialized the database.")
     # Temporary route to initialize the database on Vercel
 @app.route('/init-live-db/<secret_code>')
+def init_live_db(secret_code):
+    # Pick a secret code that only you know
+    if secret_code == 'mysecret12345':
+        db.create_all()
+        return 'Database initialized!'
+    return 'Wrong code.'
