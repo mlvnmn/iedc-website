@@ -8,7 +8,24 @@ from werkzeug.utils import secure_filename
 # --- App and Database Configuration ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'a-very-secret-key-change-this' # Change this to a random string
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///iedc.db' # This creates a database file named iedc.db
+import os # Make sure 'import os' is at the top of your file
+
+# ... (your other imports and code) ...
+
+# --- App and Database Configuration ---
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secret-key-for-dev')
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    # Use the production database URL from Render
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+else:
+    # Use the local SQLite database for development
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///iedc.db'
+
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+db = SQLAlchemy(app)
 app.config['UPLOAD_FOLDER'] = 'static/uploads' # Folder to store uploaded images
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -187,3 +204,5 @@ def init_db_command():
         print("Users already exist.")
 
     print("Initialized the database.")
+    # Temporary route to initialize the database on Vercel
+@app.route('/init-live-db/<secret_code>')
