@@ -7,13 +7,6 @@ from werkzeug.utils import secure_filename
 
 # --- App and Database Configuration ---
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'a-very-secret-key-change-this' # Change this to a random string
-import os # Make sure 'import os' is at the top of your file
-
-# ... (your other imports and code) ...
-
-# --- App and Database Configuration ---
-app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secret-key-for-dev')
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -21,12 +14,11 @@ if DATABASE_URL:
     # Use the production database URL from Render
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 else:
-    # Use the local SQLite database for development
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///iedc.db'
+    # Use an ephemeral, writable path in serverless
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/iedc.db'
 
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-db = SQLAlchemy(app)
-app.config['UPLOAD_FOLDER'] = 'static/uploads' # Folder to store uploaded images
+app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', '/tmp/uploads')
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login' # Redirect to login page if user is not logged in
@@ -204,11 +196,3 @@ def init_db_command():
         print("Users already exist.")
 
     print("Initialized the database.")
-    # Temporary route to initialize the database on Vercel
-@app.route('/init-live-db/<secret_code>')
-def init_live_db(secret_code):
-    # Pick a secret code that only you know
-    if secret_code == 'mysecret12345':
-        db.create_all()
-        return 'Database initialized!'
-    return 'Wrong code.'
