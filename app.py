@@ -22,7 +22,6 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///iedc.db'
 
 # --- Cloudinary Configuration ---
-# This configures your app to talk to your Cloudinary account
 cloudinary.config(
     cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME'),
     api_key = os.environ.get('CLOUDINARY_API_KEY'),
@@ -87,7 +86,8 @@ def logout():
 
 # --- Dashboards ---
 
-@app.route('/')
+# THIS IS THE CORRECTED PART
+@app.route('/', methods=['GET', 'POST'])
 @app.route('/student_dashboard', methods=['GET', 'POST'])
 @login_required
 def student_dashboard():
@@ -95,21 +95,17 @@ def student_dashboard():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        if 'image' not in request.files or file.filename == '':
+        if 'image' not in request.files or request.files['image'].filename == '':
             flash('No file selected')
             return redirect(request.url)
 
         file = request.files['image']
         if file:
-            # --- THIS IS THE CRITICAL CHANGE ---
-            # Upload the file to Cloudinary instead of saving locally
             upload_result = cloudinary.uploader.upload(file)
-            # Get the secure URL of the uploaded image
             image_url = upload_result['secure_url']
-            # --- END OF CHANGE ---
 
             new_submission = Submission(
-                image_filename=image_url,  # Save the URL from Cloudinary, not the filename
+                image_filename=image_url,
                 description=request.form['description'],
                 user_id=current_user.id,
                 department=current_user.department
@@ -187,5 +183,4 @@ def init_db_command():
 
 # --- Main Entry Point for Local Development ---
 if __name__ == '__main__':
-    # This part does not run on Vercel, only on your local machine
     app.run(debug=True)
